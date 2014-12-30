@@ -3,10 +3,10 @@ require 'open-uri'
 require 'issue'
 
 Redmine::Plugin.register :redmine_wiki_sql do
-  name 'Redmine Wiki SQL'
-  author 'Rodrigo Ramalho'
-  author_url 'http://www.rodrigoramalho.com/'
-  description 'Allows you to run SQL queries and have them shown on your wiki in table format'
+  name 'Redmine Wiki SQL Read Only'
+  author 'Yu Kabutoya'
+  author_url 'https://github.com/kabutoya/redmine_wiki_sql'
+  description 'Allows you to run SQL(Read Only) queries and have them shown on your wiki in table format'
   version '0.0.1'
 
   Redmine::WikiFormatting::Macros.register do
@@ -17,42 +17,60 @@ Redmine::Plugin.register :redmine_wiki_sql do
         _sentence = _sentence.gsub("\\(", "(")
         _sentence = _sentence.gsub("\\)", ")")
         _sentence = _sentence.gsub("\\*", "*")
+        _sentence = WikiSqlHelper.sanitize(_sentence)
 
-        result = ActiveRecord::Base.connection.execute(_sentence)
+        result = ActiveRecord::Base.connection.select(_sentence)
+        text = ''
         unless result.nil?
-          unless result.num_rows() == 0
-            column_names = []
-            for columns in result.fetch_fields.each do
-              column_names += columns.name.to_a
-            end
-
-            _thead = '<tr>'
-            column_names.each do |column_name|
-              _thead << '<th>' + column_name.to_s + '</th>'
-            end
-            _thead << '</tr>'
-
-            _tbody = ''
-            result.each_hash do |record|
-              unless record.nil?
-                _tbody << '<tr>'
-                column_names.each do |column_name|
-                  _tbody << '<td>' + record[column_name].to_s + '</td>'
-                end
-                _tbody << '</tr>'
-              end 
-            end
-
+          unless result.length < 1
+            _thead = WikiSqlHelper.create_thead_from(result)
+            _tbody = WikiSqlHelper.create_tbody_from(result)
             text = '<table>' << _thead << _tbody << '</table>' 
-
-            text.html_safe
-          else
-            ''.html_safe
           end
-        else
-          ''.html_safe
         end
+        text.html_safe
     end 
   end
-	
+end
+
+class WikiSqlHelper
+  class << self
+    def sanitize(sentence) 
+      #最低限の無害化(SQL準拠の構文の範囲内)を実施する。(ストプロや権限変更はDB固有が多く面倒なので対応しない。)
+      if sentence =~ /insert\s+into.+/i  \
+      || sentence =~ /update\s+.+set.+/i \
+      || sentence =~ /delete\s+from.+/i  \
+      || sentence =~ /truncate\s+.+/i    \
+      || sentence =~ /^create.+/i then
+        #出力しようとしたSQLを表示させたいが下手なSQLインジェクション起こしそうなので固定のSQLを出力。
+        return "select 'bad sql' as col from dual"  
+      end
+      return sentence
+    end
+    
+    def create_thead_from(result)
+      #カラム名を取得。（theadなので配列の先頭要素からのみで良い。）
+      column_names = result[0].keys;
+      _thead = '<tr>'
+      column_names.each do |column_name|
+        _thead << '<th>' + column_name + '</th>'
+      end
+      _thead << '</tr>'
+      return _thead
+    end
+
+    def create_tbody_from(result)
+      _tbody = '';
+      result.each do |record|
+        unless record.nil?
+          _tbody << '<tr>'
+          record.each_value do |value|
+            _tbody << '<td>' + value.to_s + '</td>'
+            end
+          _tbody << '</tr>'
+        end
+      end
+      return _tbody
+    end
+  end
 end
