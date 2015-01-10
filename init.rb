@@ -19,10 +19,11 @@ Redmine::Plugin.register :redmine_wiki_sql do
         _sentence = _sentence.gsub("\\*", "*")
         _sentence = WikiSqlHelper.sanitize(_sentence)
 
-        result = ActiveRecord::Base.connection.select(_sentence)
+        result = ActiveRecord::Base.connection.select_all(_sentence)
         text = ''
         unless result.nil?
-          unless result.length < 1
+        
+          unless result.size < 1
             _thead = WikiSqlHelper.create_thead_from(result)
             _tbody = WikiSqlHelper.create_tbody_from(result)
             text = '<table>' << _thead << _tbody << '</table>' 
