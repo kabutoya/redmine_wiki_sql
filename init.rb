@@ -19,7 +19,7 @@ Redmine::Plugin.register :redmine_wiki_sql do
         _sentence = _sentence.gsub("\\*", "*")
         _sentence = WikiSqlHelper.sanitize(_sentence)
 
-        result = ActiveRecord::Base.connection.select_all(_sentence)
+        result = ActiveRecord::Base.connection.execute(_sentence)
         text = ''
         unless result.nil?
         
@@ -51,7 +51,7 @@ class WikiSqlHelper
     
     def create_thead_from(result)
       #カラム名を取得。（theadなので配列の先頭要素からのみで良い。）
-      column_names = result[0].keys;
+      column_names = result.fields;
       _thead = '<tr>'
       column_names.each do |column_name|
         _thead << '<th>' + column_name + '</th>'
@@ -64,10 +64,11 @@ class WikiSqlHelper
       _tbody = '';
       result.each do |record|
         unless record.nil?
+          
           _tbody << '<tr>'
-          record.each_value do |value|
+          record.each do |value|
             _tbody << '<td>' + value.to_s + '</td>'
-            end
+          end
           _tbody << '</tr>'
         end
       end
