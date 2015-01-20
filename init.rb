@@ -22,12 +22,9 @@ Redmine::Plugin.register :redmine_wiki_sql do
         result = ActiveRecord::Base.connection.execute(_sentence)
         text = ''
         unless result.nil?
-        
-          unless result.size < 1
-            _thead = WikiSqlHelper.create_thead_from(result)
-            _tbody = WikiSqlHelper.create_tbody_from(result)
-            text = '<table>' << _thead << _tbody << '</table>' 
-          end
+          _thead = WikiSqlHelper.create_thead_from(result)
+          _tbody = WikiSqlHelper.create_tbody_from(result)
+          text = '<table>' << _thead << _tbody << '</table>' 
         end
         text.html_safe
     end 
