@@ -41,7 +41,7 @@ class WikiSqlHelper
       || sentence =~ /truncate\s+.+/i    \
       || sentence =~ /^create.+/i then
         #出力しようとしたSQLを表示させたいが下手なSQLインジェクション起こしそうなので固定のSQLを出力。
-        return "select 'bad sql' as col from dual"  
+        return "select 'bad sql' as col"  
       end
       return sentence
     end
