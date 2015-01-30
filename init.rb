@@ -64,7 +64,11 @@ class WikiSqlHelper
           
           _tbody << '<tr>'
           record.each do |value|
-            v = value.to_s.gsub(/\r\n/,"<br />")
+            if value.instance_of?(Array)
+                v = value[1].to_s.gsub(/\r\n/,"<br />")
+            else
+                v = value.to_s.gsub(/\r\n/,"<br />")
+            end
             _tbody << '<td>' + v.gsub(/\\r\\n/,"<br />") + '</td>'
           end
           _tbody << '</tr>'
